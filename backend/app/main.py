@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-app = FastAPI(title="SkillSwap API")
+app = FastAPI(title="SwapJob API")
 
 
 @app.get("/api/health")

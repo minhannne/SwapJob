@@ -1,2 +1,9 @@
 backend/.venv/
 __pycache__/
+
+# Cấu hình bí mật trên từng máy
+.env
+.env.*
+
+# Cho phép lưu file mẫu không chứa thông tin thật
+!.env.example

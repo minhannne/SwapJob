@@ -3,9 +3,9 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from .database import engine
-
+from .auth import router as auth_router
 app = FastAPI(title="SwapJob API")
-
+app.include_router(auth_router)
 
 @app.get("/api/health")
 def health():

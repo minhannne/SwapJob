@@ -6,14 +6,16 @@ from .database import engine
 from .auth import router as auth_router 
 from .skills import router as skills_router
 from fastapi.staticfiles import StaticFiles
-
+from .availability import router as availability_router
+from .bookings import router as bookings_router
 from .avatars import AVATAR_DIRECTORY, router as avatars_router
 app = FastAPI(title="SwapJob API")
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(skills_router)
 app.include_router(avatars_router)
-
+app.include_router(availability_router)
+app.include_router(bookings_router)
 app.mount(
     "/api/avatars",
     StaticFiles(directory=str(AVATAR_DIRECTORY)),

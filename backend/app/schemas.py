@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from typing import Literal
+from datetime import datetime
+from pydantic import AwareDatetime, model_validator
 
 class RegisterRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -152,3 +154,52 @@ class TeacherProfileResponse(BaseModel):
     bio: str | None
     avatar_url: str | None
     skills: list[UserSkillResponse]
+class AvailabilityCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    starts_at: AwareDatetime
+    ends_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def validate_time_range(self):
+        if self.ends_at <= self.starts_at:
+            raise ValueError("End time must be after start time")
+        return self
+
+
+class AvailabilityResponse(BaseModel):
+    id: int
+    teacher_id: int
+    starts_at: datetime
+    ends_at: datetime
+    created_at: datetime
+class BookingCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    skill_id: int = Field(gt=0, le=9223372036854775807)
+    availability_slot_id: int = Field(gt=0, le=9223372036854775807)
+    message: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("message")
+    @classmethod
+    def normalize_message(cls, value):
+        if value is None:
+            return None
+        return value.strip() or None
+
+
+class BookingResponse(BaseModel):
+    id: int
+    learner_id: int
+    teacher_id: int
+    skill_id: int
+    availability_slot_id: int
+    message: str | None
+    status: Literal[
+        "PENDING",
+        "ACCEPTED",
+        "REJECTED",
+        "CANCELLED",
+    ]
+    created_at: datetime
+    updated_at: datetime

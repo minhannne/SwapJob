@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import Avatar from './Avatar'
+import { translateMessage, useLanguage } from './i18n'
 
 type Profile = {
   id: number
@@ -11,99 +12,171 @@ type Profile = {
   avatar_url: string | null
 }
 
-export default function ProfileEditor({ token }: { token: string }) {
-  const [opened, setOpened] = useState(false)
+type Props = {
+  token: string
+  onSessionExpired?: () => void
+  onProfileChange?: (profile: Profile) => void
+}
+
+type ProfileError = {
+  message: string
+  informationSaved?: boolean
+}
+
+export default function ProfileEditor({
+  token,
+  onSessionExpired,
+  onProfileChange,
+}: Props) {
+  const { t, language } = useLanguage()
+
   const [profile, setProfile] = useState<Profile | null>(null)
   const [fullName, setFullName] = useState('')
   const [bio, setBio] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
+
+  const [busy, setBusy] = useState(true)
+  const [error, setError] = useState<ProfileError | null>(null)
   const [notice, setNotice] = useState('')
+  const [retry, setRetry] = useState(0)
+
   const fileInput = useRef<HTMLInputElement>(null)
+  const avatarHintId = useId()
+  const fileNameId = useId()
 
   useEffect(() => {
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl)
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
     }
   }, [previewUrl])
 
-  async function request<T>(
-    path: string,
-    options: RequestInit = {},
-  ): Promise<T> {
-    const headers = new Headers(options.headers)
-    headers.set('Authorization', `Bearer ${token}`)
+  const request = useCallback(
+    async function request<T>(
+      path: string,
+      options: RequestInit = {},
+    ): Promise<T> {
+      const headers = new Headers(options.headers)
+      headers.set('Accept', 'application/json')
+      headers.set('Authorization', `Bearer ${token}`)
 
-    const response = await fetch(path, { ...options, headers })
-    const data = await response.json()
+      const response = await fetch(path, {
+        ...options,
+        headers,
+      })
 
-    if (!response.ok) {
       if (response.status === 401) {
-        throw new Error('Phiên đăng nhập hết hạn. Hãy đăng xuất và đăng nhập lại.')
+        if (!options.signal?.aborted) {
+          onSessionExpired?.()
+        }
+
+        throw new Error('sessionExpired')
       }
 
-      const message = typeof data.detail === 'string'
-        ? data.detail
-        : Array.isArray(data.detail)
-          ? data.detail.map((item: { msg: string }) => item.msg).join('; ')
-          : 'Không thể xử lý hồ sơ.'
+      const data = await response.json().catch(() => null)
 
-      throw new Error(message)
-    }
+      if (!response.ok) {
+        throw new Error(
+          typeof data?.detail === 'string'
+            ? data.detail
+            : 'profileFailed',
+        )
+      }
 
-    return data as T
-  }
+      if (data === null) {
+        throw new Error('invalidResponse')
+      }
 
-  function applyProfile(data: Profile) {
+      return data as T
+    },
+    [token, onSessionExpired],
+  )
+
+  const applyProfile = useCallback((data: Profile) => {
     setProfile(data)
     setFullName(data.full_name)
     setBio(data.bio ?? '')
     setAvatarUrl(data.avatar_url ?? '')
-  }
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function loadProfile() {
+      try {
+        const data = await request<Profile>(
+          '/api/users/me',
+          { signal: controller.signal },
+        )
+
+        if (controller.signal.aborted) return
+
+        applyProfile(data)
+        onProfileChange?.(data)
+      } catch (err) {
+        if (controller.signal.aborted) return
+
+        setError({
+          message: err instanceof Error
+            ? err.message
+            : 'connectionFailed',
+        })
+      } finally {
+        if (!controller.signal.aborted) {
+          setBusy(false)
+        }
+      }
+    }
+
+    void loadProfile()
+
+    return () => controller.abort()
+  }, [request, applyProfile, onProfileChange, retry])
 
   function clearSelection() {
     setSelectedFile(null)
     setPreviewUrl('')
-    if (fileInput.current) fileInput.current.value = ''
+
+    if (fileInput.current) {
+      fileInput.current.value = ''
+    }
   }
 
-  async function openProfile() {
+  function reloadProfile() {
     setBusy(true)
-    setError('')
+    setError(null)
     setNotice('')
-    setOpened(true)
     clearSelection()
-
-    try {
-      applyProfile(await request<Profile>('/api/users/me'))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không thể kết nối.')
-    } finally {
-      setBusy(false)
-    }
+    setRetry(value => value + 1)
   }
 
   function chooseImage(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
-    setError('')
+
+    setError(null)
     setNotice('')
 
     if (!file) return
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ]
 
     if (!allowedTypes.includes(file.type)) {
-      setError('Vui lòng chọn ảnh JPG, PNG hoặc WebP.')
-      event.target.value = ''
+      clearSelection()
+      setError({ message: 'invalidAvatarType' })
       return
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setError('Ảnh không được lớn hơn 5 MB.')
-      event.target.value = ''
+      clearSelection()
+      setError({ message: 'avatarTooLarge' })
       return
     }
 
@@ -111,13 +184,18 @@ export default function ProfileEditor({ token }: { token: string }) {
     setPreviewUrl(URL.createObjectURL(file))
   }
 
-  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+  async function saveProfile(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault()
-    setError('')
+
+    if (busy) return
+
+    setError(null)
     setNotice('')
 
     if (!fullName.trim()) {
-      setError('Họ và tên không được để trống.')
+      setError({ message: 'fullNameRequired' })
       return
     }
 
@@ -127,7 +205,9 @@ export default function ProfileEditor({ token }: { token: string }) {
     try {
       const saved = await request<Profile>('/api/users/me', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           full_name: fullName.trim(),
           bio: bio.trim() || null,
@@ -136,138 +216,184 @@ export default function ProfileEditor({ token }: { token: string }) {
       })
 
       applyProfile(saved)
+      onProfileChange?.(saved)
       informationSaved = true
 
       if (selectedFile) {
         const formData = new FormData()
         formData.append('file', selectedFile)
 
-        const uploaded = await request<{ avatar_url: string }>(
-          '/api/users/me/avatar',
-          {
-            method: 'POST',
-            body: formData,
-          },
-        )
+        const uploaded = await request<{
+          avatar_url: string
+        }>('/api/users/me/avatar', {
+          method: 'POST',
+          body: formData,
+        })
 
-        applyProfile({ ...saved, avatar_url: uploaded.avatar_url })
+        const updated = {
+          ...saved,
+          avatar_url: uploaded.avatar_url,
+        }
+
+        applyProfile(updated)
+        onProfileChange?.(updated)
         clearSelection()
       }
 
-      setNotice('Đã lưu hồ sơ và ảnh đại diện hiện tại.')
+      setNotice('profileSaved')
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Không thể kết nối.'
-
-      setError(informationSaved
-        ? `Thông tin hồ sơ đã lưu, nhưng ảnh chưa tải lên được: ${message}`
-        : message)
+      setError({
+        message: err instanceof Error
+          ? err.message
+          : 'connectionFailed',
+        informationSaved,
+      })
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <section className="my-profile">
-      <button
-        className="button secondary"
-        type="button"
-        disabled={busy}
-        onClick={() => {
-          if (opened) {
-            setOpened(false)
-          } else {
-            void openProfile()
-          }
-        }}
-      >
-        {opened ? 'Đóng hồ sơ của tôi' : 'Hồ sơ của tôi'}
-      </button>
+    <section className="panel sj-account-page my-profile">
+      <div className="sj-account-page-heading">
+        <div>
+          <p className="sj-section-label">
+            {t('account').toUpperCase()}
+          </p>
 
-      {opened && (
-        <div className="panel profile-panel">
-          <h2>Hồ sơ của tôi</h2>
+          <h1>{t('myProfile')}</h1>
 
-          {busy && <p role="status">Đang xử lý…</p>}
-          {error && <p className="message error" role="alert">{error}</p>}
-          {notice && <p className="message success" role="status">{notice}</p>}
+          <p className="muted">
+            {t('profileDescription')}
+          </p>
+        </div>
+      </div>
 
-          {!profile && !busy && (
-            <button
-              className="button secondary"
-              onClick={() => void openProfile()}
-            >
-              Thử tải lại
-            </button>
+      {busy && <p role="status">{t('processing')}</p>}
+
+      {error && (
+        <p className="message error" role="alert">
+          {error.informationSaved && (
+            <>{t('profileSavedAvatarFailed')}{' '}</>
           )}
+          {translateMessage(error.message, language)}
+        </p>
+      )}
 
-          {profile && (
-            <form onSubmit={saveProfile}>
-              <p className="muted">Email: {profile.email}</p>
+      {notice && (
+        <p className="message success" role="status">
+          {translateMessage(notice, language)}
+        </p>
+      )}
 
-              <fieldset className="profile-fields" disabled={busy}>
-                <div className="avatar-editor">
-                  <Avatar
-                    src={previewUrl || avatarUrl || null}
-                    name={fullName}
-                    large
-                  />
+      {!profile && !busy && (
+        <button
+          type="button"
+          className="button secondary"
+          onClick={reloadProfile}
+        >
+          {t('retry')}
+        </button>
+      )}
 
-                  <div>
-                    <label>
-                      Chọn ảnh đại diện
-                      <input
-                        ref={fileInput}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={chooseImage}
-                      />
-                    </label>
+      {profile && (
+        <form onSubmit={saveProfile}>
+          <p className="muted">
+            {t('email')}: {profile.email}
+          </p>
 
-                    <p className="muted">
-                      JPG, PNG hoặc WebP, tối đa 5 MB.
-                      Bấm Lưu hồ sơ để tải ảnh lên.
-                    </p>
+          <fieldset
+            className="profile-fields"
+            disabled={busy}
+          >
+            <div className="avatar-editor">
+              <Avatar
+                src={previewUrl || avatarUrl || null}
+                name={fullName}
+                large
+              />
 
-                    {selectedFile && (
-                      <button
-                        className="text-button"
-                        type="button"
-                        onClick={clearSelection}
-                      >
-                        Bỏ ảnh vừa chọn
-                      </button>
-                    )}
-                  </div>
+              <div>
+                <input
+                  ref={fileInput}
+                  className="sj-avatar-file-input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  aria-label={t('chooseAvatar')}
+                  onChange={chooseImage}
+                  hidden
+                />
+
+                <div className="sj-avatar-file-control">
+                  <button
+                    className="button secondary"
+                    type="button"
+                    aria-describedby={`${avatarHintId} ${fileNameId}`}
+                    onClick={() => fileInput.current?.click()}
+                  >
+                    {t('chooseAvatar')}
+                  </button>
+
+                  <span
+                    id={fileNameId}
+                    className="sj-avatar-file-name"
+                    aria-live="polite"
+                  >
+                    {selectedFile?.name ?? t('noFileSelected')}
+                  </span>
                 </div>
 
-                <label>
-                  Họ và tên
-                  <input
-                    value={fullName}
-                    onChange={event => setFullName(event.target.value)}
-                    autoComplete="name"
-                    maxLength={100}
-                    required
-                  />
-                </label>
+                <p id={avatarHintId} className="muted">
+                  {t('avatarHint')}
+                </p>
 
-                <label>
-                  Giới thiệu
-                  <textarea
-                    value={bio}
-                    onChange={event => setBio(event.target.value)}
-                    maxLength={2000}
-                    rows={4}
-                  />
-                </label>
+                {selectedFile && (
+                  <button
+                    className="text-button"
+                    type="button"
+                    onClick={clearSelection}
+                  >
+                    {t('removeSelectedImage')}
+                  </button>
+                )}
+              </div>
+            </div>
 
-                <button className="button primary" type="submit">
-                  Lưu hồ sơ
-                </button>
-              </fieldset>
-            </form>
-          )}
-        </div>
+            <label>
+              {t('fullName')}
+              <input
+                value={fullName}
+                onChange={event => {
+                  setFullName(event.target.value)
+                }}
+                autoComplete="name"
+                maxLength={100}
+                required
+              />
+            </label>
+
+            <label>
+              {t('bio')}
+              <textarea
+                value={bio}
+                onChange={event => {
+                  setBio(event.target.value)
+                }}
+                maxLength={2000}
+                rows={4}
+              />
+            </label>
+
+            <div>
+              <button
+                className="button primary"
+                type="submit"
+              >
+                {t('saveProfile')}
+              </button>
+            </div>
+          </fieldset>
+        </form>
       )}
     </section>
   )

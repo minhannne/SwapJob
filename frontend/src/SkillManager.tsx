@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
+import { translateMessage, useLanguage } from './i18n'
 
 type Level = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
 
@@ -16,64 +17,148 @@ type MySkill = {
   experience_level: Level
 }
 
-const levels: { value: Level; label: string }[] = [
-  { value: 'BEGINNER', label: 'Cơ bản' },
-  { value: 'INTERMEDIATE', label: 'Trung cấp' },
-  { value: 'ADVANCED', label: 'Nâng cao' },
-]
+type Props = {
+  token: string
+  onSessionExpired?: () => void
+}
 
-export default function SkillManager({ token }: { token: string }) {
-  const [opened, setOpened] = useState(false)
+export default function SkillManager({
+  token,
+  onSessionExpired,
+}: Props) {
+  const { t, locale, language } = useLanguage()
+
   const [loaded, setLoaded] = useState(false)
   const [catalog, setCatalog] = useState<Skill[]>([])
   const [mySkills, setMySkills] = useState<MySkill[]>([])
+
   const [skillId, setSkillId] = useState('')
   const [level, setLevel] = useState<Level>('BEGINNER')
   const [newName, setNewName] = useState('')
-  const [busy, setBusy] = useState(false)
+
+  const [busy, setBusy] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [retry, setRetry] = useState(0)
 
-  async function request<T>(
-    path: string,
-    method = 'GET',
-    body?: unknown,
-  ): Promise<T> {
-    const response = await fetch(path, {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
+  const levels: { value: Level; label: string }[] = [
+    { value: 'BEGINNER', label: t('beginner') },
+    { value: 'INTERMEDIATE', label: t('intermediate') },
+    { value: 'ADVANCED', label: t('advanced') },
+  ]
+
+  const request = useCallback(
+    async function request<T>(
+      path: string,
+      method = 'GET',
+      body?: unknown,
+      signal?: AbortSignal,
+    ): Promise<T> {
+      const response = await fetch(path, {
+        method,
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+          ...(body !== undefined
+            ? { 'Content-Type': 'application/json' }
+            : {}),
+        },
         ...(body !== undefined
-          ? { 'Content-Type': 'application/json' }
+          ? { body: JSON.stringify(body) }
           : {}),
-      },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-    })
+        signal,
+      })
 
-    if (response.status === 204) {
-      return undefined as T
-    }
-
-    const data = await response.json()
-
-    if (!response.ok) {
       if (response.status === 401) {
-        throw new Error('Phiên đăng nhập hết hạn. Hãy đăng xuất và đăng nhập lại.')
+        if (!signal?.aborted) {
+          onSessionExpired?.()
+        }
+
+        throw new Error('sessionExpired')
       }
 
-      const message = typeof data.detail === 'string'
-        ? data.detail
-        : Array.isArray(data.detail)
-          ? data.detail.map((item: { msg: string }) => item.msg).join('; ')
-          : 'Không thể xử lý kỹ năng.'
+      if (response.status === 204) {
+        return undefined as T
+      }
 
-      throw new Error(message)
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(
+          typeof data?.detail === 'string'
+            ? data.detail
+            : 'skillsFailed',
+        )
+      }
+
+      if (data === null) {
+        throw new Error('invalidResponse')
+      }
+
+      return data as T
+    },
+    [token, onSessionExpired],
+  )
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function loadSkills() {
+      try {
+        const [allSkills, teachingSkills] = await Promise.all([
+          request<Skill[]>(
+            '/api/skills',
+            'GET',
+            undefined,
+            controller.signal,
+          ),
+          request<MySkill[]>(
+            '/api/users/me/skills',
+            'GET',
+            undefined,
+            controller.signal,
+          ),
+        ])
+
+        if (controller.signal.aborted) return
+
+        if (!Array.isArray(allSkills) || !Array.isArray(teachingSkills)) {
+          throw new Error('invalidResponse')
+        }
+
+        setCatalog(allSkills)
+        setMySkills(teachingSkills)
+        setLoaded(true)
+      } catch (err) {
+        if (controller.signal.aborted) return
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'connectionFailed',
+        )
+      } finally {
+        if (!controller.signal.aborted) {
+          setBusy(false)
+        }
+      }
     }
 
-    return data as T
+    void loadSkills()
+
+    return () => controller.abort()
+  }, [request, retry])
+
+  function reloadSkills() {
+    setBusy(true)
+    setError('')
+    setNotice('')
+    setRetry(value => value + 1)
   }
 
   async function run(action: () => Promise<void>) {
+    if (busy) return
+
     setBusy(true)
     setError('')
     setNotice('')
@@ -81,26 +166,19 @@ export default function SkillManager({ token }: { token: string }) {
     try {
       await action()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không thể kết nối.')
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'connectionFailed',
+      )
     } finally {
       setBusy(false)
     }
   }
 
-  async function loadSkills() {
-    await run(async () => {
-      const [allSkills, teachingSkills] = await Promise.all([
-        request<Skill[]>('/api/skills'),
-        request<MySkill[]>('/api/users/me/skills'),
-      ])
-
-      setCatalog(allSkills)
-      setMySkills(teachingSkills)
-      setLoaded(true)
-    })
-  }
-
-  async function addSkill(event: FormEvent<HTMLFormElement>) {
+  async function addSkill(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault()
 
     if (!skillId) return
@@ -117,11 +195,14 @@ export default function SkillManager({ token }: { token: string }) {
 
       setMySkills(previous => [...previous, added])
       setSkillId('')
-      setNotice('Đã thêm kỹ năng vào hồ sơ dạy.')
+      setNotice('skillAdded')
     })
   }
 
-  async function updateLevel(id: number, nextLevel: Level) {
+  async function updateLevel(
+    id: number,
+    nextLevel: Level,
+  ) {
     await run(async () => {
       const updated = await request<MySkill>(
         `/api/users/me/skills/${id}`,
@@ -130,16 +211,22 @@ export default function SkillManager({ token }: { token: string }) {
       )
 
       setMySkills(previous =>
-        previous.map(skill => skill.skill_id === id ? updated : skill),
+        previous.map(skill =>
+          skill.skill_id === id ? updated : skill,
+        ),
       )
-      setNotice('Đã lưu trình độ mới.')
+
+      setNotice('skillLevelSaved')
     })
   }
 
   async function removeSkill(skill: MySkill) {
-    if (!window.confirm(`Gỡ kỹ năng "${skill.name}" khỏi hồ sơ dạy?`)) {
-      return
-    }
+    const confirmation = t('confirmRemoveSkill').replace(
+      '{name}',
+      () => skill.name,
+    )
+
+    if (!window.confirm(confirmation)) return
 
     await run(async () => {
       await request<void>(
@@ -148,186 +235,239 @@ export default function SkillManager({ token }: { token: string }) {
       )
 
       setMySkills(previous =>
-        previous.filter(item => item.skill_id !== skill.skill_id),
+        previous.filter(
+          item => item.skill_id !== skill.skill_id,
+        ),
       )
-      setNotice('Đã gỡ kỹ năng khỏi hồ sơ dạy.')
+
+      setNotice('skillRemoved')
     })
   }
 
-  async function createSkill(event: FormEvent<HTMLFormElement>) {
+  async function createSkill(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault()
 
     if (!newName.trim()) return
 
     await run(async () => {
-      const created = await request<Skill>('/api/skills', 'POST', {
-        name: newName.trim(),
-      })
+      const created = await request<Skill>(
+        '/api/skills',
+        'POST',
+        { name: newName.trim() },
+      )
 
       setCatalog(previous => [...previous, created])
       setSkillId(String(created.id))
       setNewName('')
-      setNotice('Đã tạo kỹ năng. Chọn trình độ và bấm “Thêm vào hồ sơ”.')
+      setNotice('skillCreated')
     })
   }
 
   const availableSkills = catalog
-    .filter(skill => !mySkills.some(item => item.skill_id === skill.id))
-    .sort((a, b) => a.name.localeCompare(b.name))
+    .filter(skill =>
+      !mySkills.some(item => item.skill_id === skill.id),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name, locale))
 
   return (
-    <section className="skill-manager">
-      <button
-        className="button secondary"
-        type="button"
-        disabled={busy}
-        onClick={() => {
-          setOpened(!opened)
-          if (!opened) void loadSkills()
-        }}
-      >
-        {opened ? 'Đóng quản lý kỹ năng' : 'Kỹ năng của tôi'}
-      </button>
-
-      {opened && (
-        <div className="panel profile-panel">
-          <h2>Kỹ năng tôi có thể dạy</h2>
-          <p className="muted">
-            Chọn kỹ năng và trình độ để người học tìm thấy bạn.
+    <section className="panel sj-account-page skill-manager">
+      <div className="sj-account-page-heading">
+        <div>
+          <p className="sj-section-label">
+            {t('account').toUpperCase()}
           </p>
 
-          {busy && <p role="status">Đang xử lý…</p>}
-          {error && <p className="message error" role="alert">{error}</p>}
-          {notice && <p className="message success" role="status">{notice}</p>}
+          <h1>{t('mySkills')}</h1>
 
-          {!loaded && !busy && (
-            <button
-              className="button secondary"
-              onClick={() => void loadSkills()}
-            >
-              Thử tải lại
-            </button>
-          )}
+          <p className="muted">
+            {t('skillsDescription')}
+          </p>
+        </div>
 
-          {loaded && (
-            <>
-              {mySkills.length === 0 ? (
-                <p className="muted">Bạn chưa khai báo kỹ năng dạy nào.</p>
-              ) : (
-                <ul className="teaching-list">
-                  {mySkills.map(skill => (
-                    <li key={skill.skill_id}>
-                      <strong>{skill.name}</strong>
+        <button
+          type="button"
+          className="button secondary"
+          disabled={busy}
+          onClick={reloadSkills}
+        >
+          {t('reload')}
+        </button>
+      </div>
 
-                      <label className="level-control">
-                        Trình độ
-                        <select
-                          value={skill.experience_level}
-                          disabled={busy}
-                          onChange={event =>
-                            void updateLevel(
-                              skill.skill_id,
-                              event.target.value as Level,
-                            )
-                          }
-                        >
-                          {levels.map(item => (
-                            <option key={item.value} value={item.value}>
-                              {item.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+      {busy && <p role="status">{t('processing')}</p>}
 
-                      <button
-                        className="button remove-button"
-                        disabled={busy}
-                        onClick={() => void removeSkill(skill)}
-                      >
-                        Gỡ kỹ năng
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+      {error && (
+        <p className="message error" role="alert">
+          {translateMessage(error, language)}
+        </p>
+      )}
 
-              <p className="muted">
-                Khi đổi trình độ, hệ thống sẽ tự lưu.
-              </p>
+      {notice && (
+        <p className="message success" role="status">
+          {translateMessage(notice, language)}
+        </p>
+      )}
 
-              <form onSubmit={addSkill} className="skill-add-form">
-                <h3>Thêm kỹ năng dạy</h3>
+      {!loaded && !busy && (
+        <button
+          type="button"
+          className="button secondary"
+          onClick={reloadSkills}
+        >
+          {t('retry')}
+        </button>
+      )}
 
-                <fieldset className="profile-fields" disabled={busy}>
-                  <div className="skill-form-grid">
-                    <label>
-                      Kỹ năng
-                      <select
-                        value={skillId}
-                        onChange={event => setSkillId(event.target.value)}
-                        required
-                      >
-                        <option value="">Chọn kỹ năng</option>
-                        {availableSkills.map(skill => (
-                          <option key={skill.id} value={skill.id}>
-                            {skill.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+      {loaded && (
+        <>
+          {mySkills.length === 0 ? (
+            <p className="muted">
+              {t('noTeachingSkills')}
+            </p>
+          ) : (
+            <ul className="teaching-list">
+              {mySkills.map(skill => (
+                <li key={skill.skill_id}>
+                  <strong>{skill.name}</strong>
 
-                    <label>
-                      Trình độ
-                      <select
-                        value={level}
-                        onChange={event => setLevel(event.target.value as Level)}
-                      >
-                        {levels.map(item => (
-                          <option key={item.value} value={item.value}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-
-                  <button
-                    className="button primary"
-                    type="submit"
-                    disabled={!skillId}
-                  >
-                    Thêm vào hồ sơ
-                  </button>
-                </fieldset>
-              </form>
-
-              <details className="new-skill">
-                <summary>Không thấy kỹ năng bạn muốn dạy?</summary>
-
-                <form onSubmit={createSkill}>
-                  <label>
-                    Tên kỹ năng mới
-                    <input
-                      value={newName}
-                      onChange={event => setNewName(event.target.value)}
-                      maxLength={100}
+                  <label className="level-control">
+                    {t('level')}
+                    <select
+                      value={skill.experience_level}
                       disabled={busy}
-                      required
-                    />
+                      onChange={event => {
+                        void updateLevel(
+                          skill.skill_id,
+                          event.target.value as Level,
+                        )
+                      }}
+                    >
+                      {levels.map(item => (
+                        <option
+                          key={item.value}
+                          value={item.value}
+                        >
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <button
-                    className="button secondary"
-                    type="submit"
-                    disabled={busy || !newName.trim()}
+                    type="button"
+                    className="button remove-button"
+                    disabled={busy}
+                    onClick={() => void removeSkill(skill)}
                   >
-                    Tạo kỹ năng
+                    {t('removeSkill')}
                   </button>
-                </form>
-              </details>
-            </>
+                </li>
+              ))}
+            </ul>
           )}
-        </div>
+
+          <p className="muted">
+            {t('levelAutoSave')}
+          </p>
+
+          <form
+            onSubmit={addSkill}
+            className="skill-add-form"
+          >
+            <h3>{t('addTeachingSkill')}</h3>
+
+            <fieldset
+              className="profile-fields"
+              disabled={busy}
+            >
+              <div className="skill-form-grid">
+                <label>
+                  {t('skill')}
+                  <select
+                    value={skillId}
+                    onChange={event => {
+                      setSkillId(event.target.value)
+                    }}
+                    required
+                  >
+                    <option value="">{t('selectSkill')}</option>
+
+                    {availableSkills.map(skill => (
+                      <option
+                        key={skill.id}
+                        value={skill.id}
+                      >
+                        {skill.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  {t('level')}
+                  <select
+                    value={level}
+                    onChange={event => {
+                      setLevel(event.target.value as Level)
+                    }}
+                  >
+                    {levels.map(item => (
+                      <option
+                        key={item.value}
+                        value={item.value}
+                      >
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div>
+                <button
+                  className="button primary"
+                  type="submit"
+                  disabled={!skillId}
+                >
+                  {t('addToProfile')}
+                </button>
+              </div>
+            </fieldset>
+          </form>
+
+          <details className="new-skill">
+            <summary>
+              {t('missingSkillPrompt')}
+            </summary>
+
+            <form onSubmit={createSkill}>
+              <label>
+                {t('newSkillName')}
+                <input
+                  value={newName}
+                  onChange={event => {
+                    setNewName(event.target.value)
+                  }}
+                  maxLength={100}
+                  disabled={busy}
+                  required
+                />
+              </label>
+
+              <div>
+                <button
+                  className="button secondary"
+                  type="submit"
+                  disabled={busy || !newName.trim()}
+                >
+                  {t('createSkill')}
+                </button>
+              </div>
+            </form>
+          </details>
+        </>
       )}
     </section>
   )

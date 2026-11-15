@@ -173,6 +173,11 @@ class AvailabilityResponse(BaseModel):
     starts_at: datetime
     ends_at: datetime
     created_at: datetime
+class MyAvailabilityResponse(AvailabilityResponse):
+    slot_status: Literal["AVAILABLE", "PENDING", "BOOKED"]
+    has_booking_requests: bool
+
+
 class BookingCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -203,3 +208,47 @@ class BookingResponse(BaseModel):
     ]
     created_at: datetime
     updated_at: datetime
+class BookingListItem(BookingResponse):
+    learner_name: str | None
+    teacher_name: str | None
+    skill_name: str | None
+    slot_starts_at: datetime | None
+    slot_ends_at: datetime | None
+class BookingHistoryPage(BaseModel):
+    items: list[BookingListItem]
+    next_cursor: int | None
+class ReviewCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    booking_id: int = Field(gt=0, le=9223372036854775807)
+    rating: int = Field(strict=True, ge=1, le=5)
+    comment: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("comment")
+    @classmethod
+    def normalize_comment(cls, value):
+        if value is None:
+            return None
+        return value.strip() or None
+
+
+class ReviewResponse(BaseModel):
+    id: int
+    session_id: int
+    booking_id: int
+    rating: int
+    comment: str | None
+    created_at: datetime
+
+
+class TeacherReviewItem(ReviewResponse):
+    learner_name: str
+    skill_name: str
+
+
+class TeacherReviewsResponse(BaseModel):
+    teacher_id: int
+    average_rating: float | None
+    total_reviews: int
+    items: list[TeacherReviewItem]
+    next_cursor: int | None

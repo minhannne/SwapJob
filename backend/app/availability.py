@@ -9,9 +9,9 @@ from .dependencies import get_current_user
 from .schemas import (
     AvailabilityCreateRequest,
     AvailabilityResponse,
+    MyAvailabilityResponse,
     UserResponse,
 )
-
 router = APIRouter(
     prefix="/api/availability",
     tags=["Availability"],
@@ -102,7 +102,7 @@ def create_availability(
         ) from None
 
     return result
-@router.get("/me", response_model=list[AvailabilityResponse])
+@router.get("/me", response_model=list[MyAvailabilityResponse])
 def list_my_availability(
     current_user: UserResponse = Depends(get_current_user),
 ):
@@ -111,22 +111,43 @@ def list_my_availability(
             rows = connection.execute(
                 text("""
                     SELECT
-                        id,
-                        teacher_id,
-                        starts_at,
-                        ends_at,
-                        created_at
-                    FROM availability_slots
-                    WHERE teacher_id = :teacher_id
-                    ORDER BY starts_at, id
+                        a.id,
+                        a.teacher_id,
+                        a.starts_at,
+                        a.ends_at,
+                        a.created_at,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1
+                                FROM booking_requests AS b
+                                WHERE b.availability_slot_id = a.id
+                                  AND b.status = 'ACCEPTED'
+                            ) THEN 'BOOKED'
+                            WHEN EXISTS (
+                                SELECT 1
+                                FROM booking_requests AS b
+                                WHERE b.availability_slot_id = a.id
+                                  AND b.status = 'PENDING'
+                            ) THEN 'PENDING'
+                            ELSE 'AVAILABLE'
+                        END AS slot_status,
+                        EXISTS (
+                            SELECT 1
+                            FROM booking_requests AS b
+                            WHERE b.availability_slot_id = a.id
+                        ) AS has_booking_requests
+                    FROM availability_slots AS a
+                    WHERE a.teacher_id = :teacher_id
+                      AND a.ends_at > :now
+                    ORDER BY a.starts_at, a.id
                 """),
-                {"teacher_id": current_user.id},
+                {
+                    "teacher_id": current_user.id,
+                    "now": datetime.now(timezone.utc),
+                },
             ).mappings().all()
 
-            result = [
-                AvailabilityResponse(**row)
-                for row in rows
-            ]
+            return [MyAvailabilityResponse(**row) for row in rows]
 
     except SQLAlchemyError:
         raise HTTPException(
@@ -134,7 +155,7 @@ def list_my_availability(
             detail="Database operation unavailable",
         ) from None
 
-    return result
+
 @router.get(
     "/teachers/{teacher_id}",
     response_model=list[AvailabilityResponse],

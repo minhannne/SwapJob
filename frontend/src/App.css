@@ -1,26 +1,26 @@
+/* Nền, bố cục và kiểu chữ */
+
+:root {
+  --sj-brand: #286a50;
+  --sj-ink: #183442;
+  --sj-border: #dce4df;
+  --sj-gold: #e9b949;
+  --sj-gold-soft: #fff5d6;
+  --sj-gold-text: #765510;
+}
+
+body {
+  background: #f8faf7;
+  color: var(--sj-ink);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
 .app {
-  max-width: 1160px;
+  max-width: 1320px;
   margin: auto;
-  padding: 0 28px;
-}
-
-.topbar {
-  height: 88px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #e0e7e2;
-}
-
-.brand {
-  font-size: 28px;
-  font-weight: 800;
-  text-decoration: none;
-  letter-spacing: -1px;
-}
-
-.brand span {
-  color: #278264;
+  padding: 0 32px;
 }
 
 main {
@@ -28,12 +28,20 @@ main {
   padding: 32px 0 60px;
 }
 
-.auth-layout {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  align-items: center;
-  gap: 72px;
-  padding: 46px 0;
+h1 {
+  margin: 20px 0;
+  font-size: clamp(32px, 4.5vw, 52px);
+  line-height: 1.18;
+  letter-spacing: -1.8px;
+}
+
+h2 {
+  margin-top: 0;
+  font-size: 25px;
+}
+
+h3 {
+  font-size: 19px;
 }
 
 .eyebrow {
@@ -43,54 +51,35 @@ main {
   letter-spacing: 2px;
 }
 
-h1 {
-  font-size: clamp(32px, 4.5vw, 52px);
-  line-height: 1.18;
-  letter-spacing: -1.8px;
-  margin: 20px 0;
-}
-
-h2 {
-  font-size: 25px;
-  margin-top: 0;
-}
-
-h3 {
-  font-size: 19px;
-}
-
 .intro p,
 .muted {
-  color: #66766e;
   line-height: 1.7;
 }
 
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 28px;
+.intro p {
+  color: #66766e;
 }
 
-.tags span,
-.skill-badge {
-  background: #e6f1ea;
-  color: #24694f;
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 13px;
+.muted {
+  color: #697a73;
 }
+
+footer {
+  padding: 24px 0;
+  border-top: 1px solid #e0e7e2;
+  color: #66766e;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Thành phần dùng chung */
 
 .panel {
-  background: white;
-  border: 1px solid #e0e7e2;
-  border-radius: 22px;
-  padding: 28px;
-  box-shadow: 0 12px 36px #20342f06;
-}
-
-.auth-panel {
-  padding: 36px;
+  padding: 24px;
+  border: 1px solid var(--sj-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgb(24 52 66 / 3%);
 }
 
 label {
@@ -101,9 +90,10 @@ label {
   font-weight: 600;
 }
 
-input {
+input,
+.profile-fields textarea,
+.skill-manager select {
   width: 100%;
-  min-width: 0;
   padding: 13px 15px;
   border: 1px solid #d4ded7;
   border-radius: 11px;
@@ -111,16 +101,23 @@ input {
   color: #20342f;
 }
 
+input,
+.skill-manager select {
+  min-width: 0;
+}
+
 .button {
+  padding: 10px 16px;
   border: 0;
-  border-radius: 11px;
-  padding: 13px 20px;
-  font-weight: 650;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: none;
 }
 
 .primary {
   background: #24775b;
-  color: white;
+  color: #fff;
 }
 
 .primary:hover {
@@ -132,15 +129,346 @@ input {
   color: #285c46;
 }
 
+.button.primary {
+  border: 1px solid var(--sj-brand);
+  background: var(--sj-brand);
+  color: #fff;
+  box-shadow: none;
+}
+
+.button.primary:hover:not(:disabled) {
+  border-color: #20583f;
+  background: #20583f;
+}
+
+.button.secondary {
+  border: 1px solid #ccd8d1;
+  background: #fff;
+  color: #315b46;
+}
+
+.button.secondary:hover:not(:disabled) {
+  border-color: #a9bfb1;
+  background: #f0f5f2;
+}
+
 .full {
   width: 100%;
 }
 
 .text-button {
-  background: none;
-  border: 0;
-  color: #24775b;
   padding: 12px 0;
+  border: 0;
+  background: none;
+  color: #24775b;
+}
+
+.remove-button,
+.error {
+  background: #fff0ee;
+  color: #a1382b;
+}
+
+.success {
+  background: #e6f1ea;
+  color: #24694f;
+}
+
+.message {
+  padding: 14px 18px;
+  border-radius: 12px;
+}
+
+.message.success {
+  border: 1px solid #cfe6d7;
+  background: #edf8f1;
+  color: #286141;
+}
+
+.message.error {
+  border: 1px solid #efd5d0;
+  background: #fcf2f0;
+  color: #9c4034;
+}
+
+.avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #e6f1ea;
+  color: #24775b;
+  font-size: 23px;
+  font-weight: 750;
+}
+
+.avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-large {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  font-size: 38px;
+}
+
+.tags span,
+.skill-badge {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.tags span {
+  background: #e6f1ea;
+  color: #24694f;
+}
+
+.skill-badge {
+  background: #eaf4ee;
+  color: var(--sj-brand);
+}
+
+/* Thanh điều hướng và menu tài khoản */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 76px;
+  border-bottom: 1px solid var(--sj-border);
+}
+
+.brand {
+  color: var(--sj-ink);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  text-decoration: none;
+}
+
+.brand span {
+  color: var(--sj-brand);
+}
+
+.sj-header-left,
+.sj-main-nav {
+  display: flex;
+  align-items: center;
+}
+
+.sj-header-left {
+  gap: 36px;
+  min-width: 0;
+}
+
+.sj-main-nav {
+  gap: 8px;
+}
+
+.sj-main-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 7px;
+  color: #63746b;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sj-main-nav a:hover {
+  background: #eef4f0;
+  color: var(--sj-brand);
+}
+
+.sj-main-nav a.is-active {
+  background: #e7f2eb;
+  color: var(--sj-brand);
+}
+
+.sj-account-menu {
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+}
+
+.sj-account-menu > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.sj-account-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sj-account-menu > summary:hover,
+.sj-account-menu[open] > summary {
+  border-color: var(--sj-border);
+  background: #fff;
+}
+
+.sj-account-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+}
+
+.sj-account-avatar > * {
+  width: 34px;
+  min-width: 34px;
+  max-width: 34px;
+  height: 34px;
+  margin: 0;
+  border-radius: 50%;
+  font-size: 15px;
+  object-fit: cover;
+}
+
+.sj-account-name {
+  max-width: 160px;
+  overflow: hidden;
+  color: #294338;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sj-account-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 250px;
+  padding: 7px;
+  border: 1px solid var(--sj-border);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgb(24 52 66 / 12%);
+}
+
+.sj-account-dropdown-info {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 6px;
+  padding: 10px 11px 13px;
+  border-bottom: 1px solid #e7ece9;
+}
+
+.sj-account-dropdown-info strong,
+.sj-account-dropdown-info span {
+  overflow-wrap: anywhere;
+}
+
+.sj-account-dropdown-info strong {
+  color: var(--sj-ink);
+  font-size: 14px;
+}
+
+.sj-account-dropdown-info span {
+  color: #738178;
+  font-size: 12px;
+}
+
+.sj-account-dropdown > a,
+.sj-account-dropdown > button {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #294338;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+}
+
+.sj-account-dropdown > a:hover,
+.sj-account-dropdown > button:hover,
+.sj-account-dropdown > a[aria-current="page"] {
+  background: #edf5ef;
+}
+
+.sj-account-dropdown > button {
+  margin-top: 5px;
+  color: #9c4034;
+}
+
+/* Đăng nhập và đăng ký */
+
+.auth-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  max-width: 68rem;
+  margin-inline: auto;
+  padding: clamp(1.5rem, 4vw, 3rem) 0;
+}
+
+.auth-layout .intro h1 {
+  margin-block: 0.75rem;
+  font-size: clamp(1.9rem, 3.5vw, 2.65rem);
+  line-height: 1.15;
+}
+
+.auth-layout .intro p {
+  max-width: 46ch;
+  line-height: 1.6;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.auth-layout .auth-panel {
+  box-sizing: border-box;
+  justify-self: center;
+  width: 100%;
+  max-width: 26rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.auth-layout .auth-panel h2 {
+  margin-block: 0 0.5rem;
+  font-size: 1.45rem;
+}
+
+.auth-layout .auth-panel > .muted {
+  margin-block: 0 1rem;
+}
+
+.auth-layout .auth-panel form {
+  gap: 0.75rem;
+}
+
+.auth-layout .auth-panel input,
+.auth-layout .auth-panel button[type="submit"] {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding-block: 0.5rem;
+  font-size: 1rem;
 }
 
 .auth-panel > .text-button {
@@ -148,9 +476,11 @@ input {
   margin: 12px auto 0;
 }
 
+/* Khám phá */
+
 .search-hero {
-  text-align: center;
   padding: 35px 0;
+  text-align: center;
 }
 
 .search-form {
@@ -176,30 +506,25 @@ input {
 
 .teacher-card {
   display: flex;
-  align-items: flex-start;
   flex-direction: column;
+  align-items: flex-start;
 }
 
 .teacher-card .button {
   margin-top: auto;
 }
 
-.avatar {
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
-  background: #e6f1ea;
-  color: #24775b;
-  display: grid;
-  place-items: center;
-  font-size: 23px;
-  font-weight: 750;
+.level {
+  color: #66766e;
+  font-size: 12px;
+  letter-spacing: 0.6px;
 }
 
-.level {
-  font-size: 12px;
-  color: #66766e;
-  letter-spacing: 0.6px;
+/* Hồ sơ và kỹ năng cá nhân */
+
+.my-profile,
+.skill-manager {
+  margin-bottom: 24px;
 }
 
 .profile-panel {
@@ -217,9 +542,43 @@ input {
   margin: 0;
 }
 
-.skill-list {
-  list-style: none;
+.profile-fields {
+  min-width: 0;
+  margin: 0;
   padding: 0;
+  border: 0;
+}
+
+.profile-fields textarea,
+.skill-manager select {
+  font: inherit;
+}
+
+.profile-fields textarea {
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.profile-fields textarea:focus-visible {
+  outline: 3px solid #63a993;
+  outline-offset: 3px;
+}
+
+.avatar-editor {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 24px 0;
+}
+
+.profile-panel > .avatar-large {
+  margin-bottom: 20px;
+}
+
+.skill-list,
+.teaching-list {
+  padding: 0;
+  list-style: none;
 }
 
 .skill-list li {
@@ -232,97 +591,8 @@ input {
 }
 
 .skill-list span {
-  font-size: 13px;
-  color: #66766e;
-}
-
-.message {
-  padding: 14px 18px;
-  border-radius: 12px;
-}
-
-.error {
-  background: #fff0ee;
-  color: #a1382b;
-}
-
-.success {
-  background: #e6f1ea;
-  color: #24694f;
-}
-
-footer {
-  padding: 24px 0;
-  border-top: 1px solid #e0e7e2;
   color: #66766e;
   font-size: 13px;
-  text-align: center;
-}
-
-@media (max-width: 760px) {
-  .app {
-    padding: 0 18px;
-  }
-
-  .auth-layout {
-    grid-template-columns: 1fr;
-    gap: 28px;
-    padding: 15px 0;
-  }
-
-  .auth-panel {
-    padding: 26px;
-  }
-
-  .search-form {
-    flex-direction: column;
-  }
-}
-.my-profile {
-  margin-bottom: 24px;
-}
-
-.profile-fields {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  min-width: 0;
-}
-
-.profile-fields textarea {
-  width: 100%;
-  padding: 13px 15px;
-  border: 1px solid #d4ded7;
-  border-radius: 11px;
-  background: #fcfdfc;
-  color: #20342f;
-  font: inherit;
-  line-height: 1.6;
-  resize: vertical;
-}
-
-.profile-fields textarea:focus-visible {
-  outline: 3px solid #63a993;
-  outline-offset: 3px;
-}
-.skill-manager {
-  margin-bottom: 24px;
-}
-
-.skill-manager select {
-  width: 100%;
-  min-width: 0;
-  padding: 13px 15px;
-  border: 1px solid #d4ded7;
-  border-radius: 11px;
-  background: #fcfdfc;
-  color: #20342f;
-  font: inherit;
-}
-
-.teaching-list {
-  list-style: none;
-  padding: 0;
 }
 
 .teaching-list li {
@@ -336,11 +606,6 @@ footer {
 
 .level-control {
   margin: 0;
-}
-
-.remove-button {
-  background: #fff0ee;
-  color: #a1382b;
 }
 
 .skill-add-form {
@@ -360,15 +625,759 @@ footer {
 }
 
 .new-skill summary {
-  cursor: pointer;
   color: #24775b;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sj-account-page {
+  max-width: 1000px;
+  margin: 8px auto 0;
+}
+
+.sj-account-page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.sj-account-page h1 {
+  margin: 6px 0 10px;
+  color: var(--sj-ink);
+  font-size: 28px;
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+}
+
+.sj-account-page-heading .muted {
+  margin: 0;
+  font-size: 14px;
+}
+
+.sj-account-page .profile-fields {
+  display: grid;
+  gap: 20px;
+}
+
+.sj-account-page .avatar-editor {
+  padding: 18px;
+  border: 1px solid #e0e8e2;
+  border-radius: 10px;
+  background: #f7faf8;
+}
+
+.sj-account-page select,
+.sj-account-page textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid #ccd8d0;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--sj-ink);
+  font: inherit;
+}
+
+.sj-account-page textarea {
+  resize: vertical;
+}
+
+/* Hồ sơ người dạy */
+
+.sj-teacher-page {
+  padding-top: 8px;
+}
+
+.sj-back-link {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 20px;
+  color: var(--sj-brand);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sj-back-link:hover {
+  text-decoration: underline;
+}
+
+.sj-teacher-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 24px;
+}
+
+.sj-teacher-summary {
+  position: static;
+  display: grid;
+  grid-column: 1;
+  grid-row: 1;
+  grid-template-columns: 80px minmax(0, 1fr);
+  align-content: start;
+  column-gap: 18px;
+  min-width: 0;
+  background: #fff;
+}
+
+.sj-teacher-summary > :first-child {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  height: 80px;
+  margin: 0;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.sj-section-label {
+  margin: 22px 0 8px;
+  color: #6b7e73;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 1px;
+}
+
+.sj-account-page-heading .sj-section-label {
+  margin-top: 0;
+}
+
+.sj-teacher-summary .sj-section-label {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  margin: 0 0 6px;
+}
+
+.sj-teacher-summary h1 {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+  margin: 0;
+  color: var(--sj-ink);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+  overflow-wrap: anywhere;
+}
+
+.sj-teacher-summary .sj-teacher-bio {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin: 18px 0 0;
+  color: #60726a;
+  font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.sj-teacher-summary .sj-teacher-skill-count {
+  grid-column: 1 / -1;
+  grid-row: 4;
+  justify-self: start;
+  width: fit-content;
+  margin: 16px 0 0;
+  padding: 7px 12px;
+  border: 1px solid #efdaa0;
+  border-radius: 6px;
+  background: var(--sj-gold-soft);
+  color: var(--sj-gold-text);
+  font-size: 13px;
   font-weight: 600;
 }
 
+/* Hai ô thông tin ở hàng trên, lịch chiếm cả hàng dưới. */
+.sj-teacher-content {
+  display: contents;
+}
+
+.sj-teacher-content > .panel:first-child {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.sj-teacher-content > .sj-calendar-panel {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+.sj-teacher-content h2 {
+  margin-bottom: 8px;
+  color: var(--sj-ink);
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+}
+
+.sj-teacher-content > .panel > .muted {
+  margin-top: 0;
+  font-size: 14px;
+}
+
+.sj-teacher-skills {
+  display: grid;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sj-teacher-skills li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 0;
+  border-bottom: 1px solid #e9eeeb;
+}
+
+.sj-teacher-skills li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.sj-teacher-skills li > div {
+  min-width: 0;
+}
+
+.sj-teacher-skills h3 {
+  margin: 0;
+  color: var(--sj-ink);
+  font-size: 16px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.sj-teacher-skills p {
+  margin: 5px 0 0;
+  color: #697a73;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.sj-level-badge {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: #edf4ef;
+  color: #35674c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Lịch theo tuần */
+
+.sj-calendar-panel {
+  min-width: 0;
+}
+
+.sj-calendar-panel > h2::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 18px;
+  margin-right: 10px;
+  border-radius: 3px;
+  background: var(--sj-gold);
+  vertical-align: -1px;
+}
+
+.sj-calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.sj-calendar-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sj-calendar-control {
+  min-width: 38px;
+  min-height: 34px;
+  padding: 6px 11px;
+  border: 1px solid #d4ded7;
+  border-radius: 6px;
+  background: #fff;
+  color: #294a3b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sj-calendar-control:hover {
+  border-color: #a9bfb1;
+  background: #f0f5f2;
+}
+
+.sj-calendar-period {
+  color: #274338;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sj-calendar-timezone {
+  margin: 14px 0;
+  color: #74837b;
+  font-size: 12px;
+}
+
+.sj-calendar-empty {
+  padding: 12px 14px;
+  border: 1px solid #e2e9e4;
+  border-radius: 10px;
+  background: #f4f7f5;
+  color: #64756b;
+  font-size: 14px;
+}
+
+.sj-calendar-scroll {
+  max-height: 600px;
+  overflow: auto;
+  border: 1px solid var(--sj-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.sj-calendar-board {
+  min-width: 700px;
+}
+
+.sj-calendar-head,
+.sj-calendar-body {
+  display: grid;
+  grid-template-columns: 56px repeat(7, minmax(0, 1fr));
+}
+
+.sj-calendar-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border-bottom: 1px solid var(--sj-border);
+  background: #f3f6f4;
+}
+
+.sj-calendar-hour-heading,
+.sj-calendar-day-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 56px;
+  padding: 8px 4px;
+  border-right: 1px solid #e1e8e3;
+  color: #294338;
+  font-size: 12px;
+}
+
+.sj-calendar-day-heading span {
+  color: #738178;
+}
+
+.sj-calendar-day-heading:nth-child(7),
+.sj-calendar-day-heading:nth-child(8) {
+  background: #edf2ef;
+}
+
+.sj-calendar-day-heading.is-today {
+  background: var(--sj-gold-soft);
+  color: var(--sj-gold-text);
+  box-shadow: inset 0 -3px 0 var(--sj-gold);
+}
+
+.sj-calendar-day-heading.is-today span {
+  color: var(--sj-gold-text);
+}
+
+.sj-calendar-hours {
+  position: relative;
+  border-right: 1px solid #e1e8e3;
+  background: #f8faf9;
+}
+
+.sj-calendar-hours > span {
+  position: absolute;
+  right: 7px;
+  padding-top: 3px;
+  color: #7a8880;
+  font-size: 11px;
+}
+
+.sj-calendar-day-column {
+  position: relative;
+  border-right: 1px solid #e6ece8;
+  background-color: #fff;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 27px,
+    #f0f3f1 27px,
+    #f0f3f1 28px,
+    transparent 28px,
+    transparent 55px,
+    #e3eae5 55px,
+    #e3eae5 56px
+  );
+}
+
+.sj-calendar-day-column:nth-child(7),
+.sj-calendar-day-column:nth-child(8) {
+  background-color: #fafcfb;
+}
+
+.sj-calendar-event {
+  position: absolute;
+  right: 3px;
+  left: 3px;
+  z-index: 1;
+  min-height: 0;
+  padding: 2px 4px;
+  overflow: hidden;
+  border: 1px solid #96c7a7;
+  border-left: 3px solid #37885b;
+  border-radius: 5px;
+  background: #e0f2e6;
+  color: #245f3c;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+  box-shadow: none;
+}
+
+.sj-calendar-event:hover {
+  border-color: #37885b;
+  background: #cde8d6;
+}
+
+.sj-calendar-event.is-selected {
+  border-color: var(--sj-brand);
+  background: var(--sj-brand);
+  color: #fff;
+}
+
+.sj-calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+  color: #738178;
+  font-size: 12px;
+}
+
+.sj-calendar-legend > span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #37885b;
+}
+
+.sj-selected-slot {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #c7dfcf;
+  border-radius: 12px;
+  background: #f0f7f2;
+  color: #244e3b;
+}
+
+.sj-selected-slot p {
+  margin: 8px 0 0;
+  line-height: 1.6;
+}
+
+/* Hộp đặt lịch */
+
+.sj-booking-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  overflow-y: auto;
+  border: 1px solid #d3ded6;
+  border-radius: 12px;
+  background: #fff;
+  color: #153442;
+  box-shadow: 0 18px 60px rgb(18 42 30 / 18%);
+}
+
+.sj-booking-dialog::backdrop {
+  background: rgb(18 35 28 / 40%);
+}
+
+.sj-booking-dialog-content {
+  padding: 26px;
+}
+
+.sj-booking-dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sj-booking-dialog-heading .sj-section-label {
+  margin-top: 0;
+}
+
+.sj-booking-dialog-heading h2 {
+  margin: 8px 0 20px;
+  color: var(--sj-ink);
+  font-size: 22px;
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.sj-booking-close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #e0e7e2;
+  border-radius: 50%;
+  background: #f7f9f8;
+  color: #65786b;
+  font-size: 25px;
+}
+
+.sj-booking-close:hover {
+  background: #eaf1ec;
+}
+
+.sj-booking-time {
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid #ebdfbc;
+  border-radius: 8px;
+  background: #fffaf0;
+  color: #594b2c;
+  font-size: 14px;
+}
+
+.sj-booking-time p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.sj-booking-time small {
+  color: #66766e;
+}
+
+.sj-booking-dialog form {
+  display: grid;
+  gap: 18px;
+}
+
+.sj-booking-dialog label {
+  gap: 9px;
+  margin: 0;
+  color: #153442;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.sj-booking-dialog select,
+.sj-booking-dialog textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #ccd8d0;
+  border-radius: 7px;
+  background: #fff;
+  color: #153442;
+  font: inherit;
+  font-weight: 400;
+}
+
+.sj-booking-dialog textarea {
+  min-height: 110px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.sj-booking-dialog select:focus-visible,
+.sj-booking-dialog textarea:focus-visible {
+  outline: 3px solid #63a993;
+  outline-offset: 2px;
+}
+
+.sj-booking-hint {
+  margin: 0;
+  color: #66766e;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.sj-booking-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+/* Form Lịch rảnh của tôi */
+
+[aria-labelledby="my-availability-title"] > h1 {
+  margin-block: 0 0.5rem;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1.2;
+}
+
+[aria-labelledby="my-availability-title"] > form.panel {
+  margin-block: 1rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+[aria-labelledby="my-availability-title"] > form.panel > h2 {
+  margin-block: 0 1rem;
+  font-size: 1.25rem;
+}
+
+[aria-labelledby="my-availability-title"] .profile-fields {
+  display: grid;
+  gap: 1rem;
+  max-width: 52rem;
+}
+
+[aria-labelledby="my-availability-title"] .skill-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem 1.5rem;
+}
+
+[aria-labelledby="my-availability-title"] .profile-fields > button {
+  justify-self: start;
+  margin: 0;
+}
+
+/* Bộ chọn ngày và giờ */
+
+.sj-date-picker-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.75rem;
+}
+
+.sj-date-picker-fields > div,
+.sj-date-picker-fields > label {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.sj-date-picker-fields .button,
+.sj-date-picker-fields input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  padding: 0 0.6rem;
+  font-size: 0.9rem;
+}
+
+.sj-date-picker-calendar {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #dce5df;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.sj-date-picker-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sj-date-picker-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.sj-date-picker-days > span {
+  color: #475b52;
+  font-size: 0.75rem;
+}
+
+.sj-date-picker-days > button {
+  min-height: 2.25rem;
+  padding: 0.25rem 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #172b24;
+  cursor: pointer;
+}
+
+.sj-date-picker-days > button:hover {
+  background: #e5f3eb;
+}
+
+.sj-date-picker-days > button[aria-pressed="true"] {
+  background: var(--sj-brand);
+  color: #fff;
+}
+
+/* Màn hình nhỏ */
+
+@media (max-width: 900px) {
+  .app {
+    padding-inline: 18px;
+  }
+
+  .sj-teacher-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sj-teacher-summary,
+  .sj-teacher-content > .panel:first-child,
+  .sj-teacher-content > .sj-calendar-panel {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
 @media (max-width: 760px) {
+  .auth-layout,
   .teaching-list li,
   .skill-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .search-form {
+    flex-direction: column;
   }
 
   .teaching-list li {
@@ -378,40 +1387,901 @@ footer {
   .teaching-list .remove-button {
     justify-self: start;
   }
+
+  .avatar-editor,
+  .sj-teacher-skills li {
+    flex-direction: column;
+  }
+
+  .avatar-editor {
+    align-items: flex-start;
+  }
+
+  .sj-header-left {
+    gap: 12px;
+  }
+
+  .sj-main-nav a {
+    padding-inline: 9px;
+  }
+
+  .sj-account-name {
+    display: none;
+  }
+
+  [aria-labelledby="my-availability-title"] .skill-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
-.avatar {
+/* Yêu cầu đặt lịch */
+.sj-request-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sj-request-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+/* Yêu cầu đặt lịch */
+.sj-request-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  border-bottom: 1px solid var(--sj-border);
+}
+
+.sj-request-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 13rem);
+}
+
+.sj-request-tab {
+  min-height: 42px;
+  padding: 0.5rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #63746b;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sj-request-tab[aria-pressed="true"] {
+  border-bottom-color: var(--sj-brand);
+  color: var(--sj-brand);
+}
+
+.sj-request-tab:hover:not(:disabled) {
+  background: #eef4f0;
+}
+
+.sj-request-timezone {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+}
+
+.sj-request-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.sj-request-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem 1.25rem;
+  padding: 0.85rem 1rem;
+}
+
+.sj-request-info {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sj-request-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.75rem;
+}
+
+.sj-request-title h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.sj-request-title p,
+.sj-request-time {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.sj-request-message {
+  margin-top: 0.4rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.sj-request-message-preview[data-expanded="false"] {
+  max-height: 3em;
   overflow: hidden;
+}
+
+.sj-request-message-preview p {
+  margin: 0;
+  line-height: inherit;
+  white-space: pre-wrap;
+}
+
+.sj-request-message-toggle {
+  margin-top: 0.2rem;
+  padding: 0.2rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--sj-brand);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sj-request-side {
+  display: grid;
+  justify-items: end;
+  gap: 0.5rem;
+}
+
+.sj-request-status {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #eef0ef;
+  color: #53615b;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.sj-request-status.pending {
+  background: var(--sj-gold-soft);
+  color: var(--sj-gold-text);
+}
+
+.sj-request-status.accepted {
+  background: #e6f1ea;
+  color: #24694f;
+}
+
+.sj-request-status.rejected {
+  background: #fff0ee;
+  color: #9c4034;
+}
+
+.sj-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sj-request-action {
+  box-sizing: border-box;
+  width: 7rem;
+  min-height: 38px;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid;
+  text-align: center;
+}
+
+.sj-request-accept {
+  border-color: var(--sj-brand);
+  background: var(--sj-brand);
+  color: #fff;
+}
+
+.sj-request-accept:hover:not(:disabled) {
+  border-color: #20583f;
+  background: #20583f;
+}
+
+.sj-request-decline {
+  border-color: #e5b9b1;
+  background: #fff;
+  color: #9c4034;
+}
+
+.sj-request-decline:hover:not(:disabled) {
+  background: #fff0ee;
+}
+
+@media (max-width: 640px) {
+  .sj-request-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sj-request-side {
+    justify-items: start;
+  }
+}
+.sj-request-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.sj-request-more {
+  margin-top: 1rem;
+}
+.sj-session-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 22rem);
+}
+
+.sj-session-learner {
+  background: #e6f1ea;
+  color: #24694f;
+}
+
+.sj-session-mentor {
+  background: var(--sj-gold-soft);
+  color: var(--sj-gold-text);
+}
+/* Bộ chuyển ngôn ngữ */
+.sj-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   flex-shrink: 0;
 }
 
-.avatar img {
+.sj-language-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid #ccd8d1;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.sj-language-switch > button {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #63746b;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sj-language-switch > button[aria-pressed="true"] {
+  background: var(--sj-brand);
+  color: #fff;
+}
+
+.sj-language-switch > button:focus-visible {
+  outline: 2px solid var(--sj-gold);
+  outline-offset: -3px;
+}
+/* Trạng thái khung giờ trên lịch của người hướng dẫn */
+.sj-calendar-event.pending {
+  border-color: #dfc471;
+  border-left-color: #b58b23;
+  background: #fff5d6;
+  color: #765510;
+}
+
+.sj-calendar-event.booked {
+  border-color: #b5cae1;
+  border-left-color: #4e78a7;
+  background: #eaf1fa;
+  color: #315a86;
+}
+
+.sj-calendar-event.pending:hover {
+  background: #f9ebbd;
+}
+
+.sj-calendar-event.booked:hover {
+  background: #dce8f6;
+}
+
+.sj-calendar-event.pending.is-selected,
+.sj-calendar-event.booked.is-selected {
+  outline: 2px solid currentColor;
+  outline-offset: -3px;
+}
+
+.sj-calendar-event-status {
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 600;
 }
 
-.avatar-large {
-  width: 112px;
-  height: 112px;
-  border-radius: 50%;
-  font-size: 38px;
-}
-
-.avatar-editor {
+.sj-calendar-state-legend,
+.sj-availability-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 24px;
-  margin: 24px 0;
+  gap: 10px 18px;
+  margin-top: 14px;
 }
 
-.profile-panel > .avatar-large {
-  margin-bottom: 20px;
+.sj-calendar-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #63746b;
+  font-size: 12px;
+}
+
+.sj-calendar-key::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.sj-calendar-key.available::before {
+  background: #37885b;
+}
+
+.sj-calendar-key.pending::before {
+  background: #b58b23;
+}
+
+.sj-calendar-key.booked::before {
+  background: #4e78a7;
+}
+
+.sj-availability-actions .button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+/* Một ngày và hai giờ cho mỗi khung lịch */
+.sj-date-picker.is-date-only .sj-date-picker-fields {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+[aria-labelledby="my-availability-title"]
+.skill-form-grid.sj-availability-form-grid {
+  grid-template-columns:
+    minmax(0, 1.4fr)
+    repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+[aria-labelledby="my-availability-title"]
+.sj-availability-form-grid > label {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+[aria-labelledby="my-availability-title"]
+.sj-availability-form-grid > label > input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  padding: 0 0.6rem;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 760px) {
-  .avatar-editor {
-    flex-direction: column;
-    align-items: flex-start;
+  [aria-labelledby="my-availability-title"]
+  .skill-form-grid.sj-availability-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Bộ chọn ảnh đại diện */
+.sj-account-page .sj-avatar-file-input {
+  display: none;
+}
+
+.sj-avatar-file-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.sj-avatar-file-name {
+  max-width: 24rem;
+  color: #697a73;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+/* Căn ô trình độ và nút gỡ kỹ năng */
+.skill-manager .teaching-list .level-control select,
+.skill-manager .teaching-list .remove-button {
+  box-sizing: border-box;
+  height: 44px;
+  margin: 0;
+  padding-block: 0;
+}
+
+.skill-manager .teaching-list .remove-button {
+  align-self: end;
+}
+/* Phần thưởng */
+.sj-rewards-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.sj-rewards-demo-badge {
+  padding: 4px 10px;
+  border: 1px solid #efdaa0;
+  border-radius: 999px;
+  background: var(--sj-gold-soft);
+  color: var(--sj-gold-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sj-rewards-demo-description {
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+
+.sj-rewards-balance {
+  border-color: #e5d19a;
+  background: #fffaf0;
+}
+
+.sj-rewards-balance-label {
+  margin: 0;
+  color: #765510;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.sj-rewards-balance-value {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 8px 0;
+  color: var(--sj-brand);
+}
+
+.sj-rewards-balance-value strong {
+  font-size: clamp(36px, 5vw, 48px);
+  line-height: 1.15;
+}
+
+.sj-rewards-balance-value span {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.sj-rewards-balance .muted {
+  margin: 0;
+  font-size: 14px;
+}
+
+.sj-rewards-section-title {
+  margin: 28px 0 14px;
+  font-size: 20px;
+}
+
+.sj-reward-missions {
+  margin: 0;
+  padding: 8px 20px;
+  list-style: none;
+}
+
+.sj-reward-missions li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(130px, auto);
+  align-items: center;
+  gap: 12px 20px;
+  padding: 16px 0;
+}
+
+.sj-reward-missions li + li {
+  border-top: 1px solid #e7ece9;
+}
+
+.sj-reward-missions strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.sj-reward-mission-points {
+  color: var(--sj-brand);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.sj-reward-mission-status {
+  justify-self: end;
+  color: #748078;
+  font-size: 12px;
+}
+
+.sj-reward-mission-status.is-complete {
+  color: var(--sj-brand);
+}
+
+.sj-reward-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.sj-reward-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 20px;
+}
+
+.sj-reward-symbol {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #eaf4ee;
+  color: var(--sj-brand);
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.sj-reward-card h3 {
+  margin: 16px 0 8px;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.sj-reward-card > .muted {
+  margin: 0 0 20px;
+  font-size: 13px;
+}
+
+.sj-reward-card-footer {
+  margin-top: auto;
+}
+
+.sj-reward-price {
+  margin: 0 0 12px;
+  color: var(--sj-brand);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sj-reward-card-footer .button {
+  width: 100%;
+  min-height: 42px;
+}
+
+.sj-rewards-dialog .sj-booking-actions .button {
+  min-width: 110px;
+  min-height: 40px;
+}
+
+@media (max-width: 760px) {
+  .sj-reward-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sj-reward-missions li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .sj-reward-mission-status {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+/* Đánh giá buổi học */
+.sj-session-review-action {
+  margin-top: 12px;
+}
+
+.sj-reviewed-label {
+  color: var(--sj-brand);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sj-booking-dialog .sj-review-rating {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sj-review-rating legend {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sj-review-stars {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.sj-booking-dialog .sj-review-star-choice {
+  position: relative;
+  display: block;
+  margin: 0;
+  cursor: pointer;
+}
+
+.sj-review-star-choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.sj-review-star-choice > span {
+  display: block;
+  border-radius: 5px;
+  color: #cbd4cf;
+  font-size: 38px;
+  line-height: 1.3;
+}
+
+.sj-review-star-choice > span.is-filled {
+  color: #c49325;
+}
+
+.sj-review-star-choice input:focus-visible + span {
+  outline: 2px solid var(--sj-brand);
+  outline-offset: 3px;
+}
+
+/* Đánh giá trên hồ sơ */
+.sj-teacher-review-panel {
+  margin-top: 24px;
+}
+
+.sj-review-summary,
+.sj-review-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sj-review-summary {
+  padding-bottom: 16px;
+}
+
+.sj-review-summary > strong {
+  color: var(--sj-brand);
+  font-size: 24px;
+}
+
+.sj-teacher-review {
+  padding: 18px 0;
+  border-top: 1px solid var(--sj-border);
+}
+
+.sj-review-display-stars {
+  color: #a77814;
+  white-space: nowrap;
+}
+
+.sj-review-score {
+  margin-left: 8px;
+  color: #63746b;
+  font-size: 12px;
+}
+
+.sj-review-date {
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.sj-review-comment {
+  margin: 10px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+}
+/* Chuông và bảng thông báo */
+.sj-notifications {
+  position: relative;
+  flex-shrink: 0;
+  z-index: 30;
+}
+
+.sj-notification-bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sj-notification-bell:hover {
+  background: #fff5d6;
+}
+
+.sj-notification-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  box-sizing: content-box;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #d9363e;
+}
+
+.sj-notification-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  box-sizing: border-box;
+  width: min(420px, calc(100vw - 36px));
+  max-height: min(560px, calc(100dvh - 110px));
+  overflow-y: auto;
+  border: 1px solid var(--sj-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 35px rgb(24 52 66 / 14%);
+}
+
+.sj-notification-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid var(--sj-border);
+  background: #fff;
+}
+
+.sj-notification-heading h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.sj-notification-heading > button {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--sj-brand);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.sj-notification-heading > button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.sj-notification-item {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  border-bottom: 1px solid #edf0ee;
+  border-radius: 0;
+  background: #fff;
+  color: #183442;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sj-notification-item:hover {
+  background: #f0f5f2;
+}
+
+.sj-notification-item.is-unread {
+  background: #fff1f0;
+}
+
+.sj-notification-item.is-unread:hover {
+  background: #ffe6e3;
+}
+
+.sj-notification-item-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.sj-notification-item.is-unread .sj-notification-item-dot {
+  background: #d9363e;
+}
+
+.sj-notification-text {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.sj-notification-item.is-unread .sj-notification-text {
+  font-weight: 600;
+}
+
+.sj-notification-item time {
+  display: block;
+  margin-top: 6px;
+  color: #738178;
+  font-size: 12px;
+}
+
+.sj-notification-feedback {
+  margin: 0;
+  padding: 16px;
+  font-size: 14px;
+}
+
+.sj-notification-more {
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  background: #fff;
+  color: var(--sj-brand);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sj-request-card.is-notification-target {
+  border-color: #d9b24c;
+  box-shadow: 0 0 0 2px #fff0bd;
+}
+
+@media (max-width: 760px) {
+  .sj-notification-panel {
+    position: fixed;
+    top: 88px;
+    right: 18px;
   }
 }

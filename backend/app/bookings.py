@@ -1,12 +1,21 @@
 from datetime import datetime, timezone
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from .database import engine
 from .dependencies import get_current_user
-from .schemas import BookingCreateRequest, BookingResponse, UserResponse
+from .notifications import create_booking_notification
+from .schemas import (
+    BookingCreateRequest,
+    BookingHistoryPage,
+    BookingListItem,
+    BookingResponse,
+    UserResponse,
+)
+
 
 router = APIRouter(
     prefix="/api/bookings",
@@ -145,7 +154,13 @@ def create_booking(
                     "slot_id": slot["id"],
                     "message": data.message,
                 },
-            ).mappings().one()
+                  ).mappings().one()
+            create_booking_notification(
+                connection,
+                recipient_id=slot["teacher_id"],
+                booking_id=row["id"],
+                notification_type="BOOKING_REQUESTED",
+            )
 
             result = BookingResponse(**row)
 
@@ -162,80 +177,111 @@ def create_booking(
         ) from None
 
     return result
-@router.get("/sent", response_model=list[BookingResponse])
+
+
+def _list_bookings(
+    user_id: int,
+    direction: Literal["sent", "received"],
+    *,
+    pending_only: bool = False,
+    before_id: int | None = None,
+    limit: int | None = None,
+) -> list[BookingListItem]:
+    owner_column = "learner_id" if direction == "sent" else "teacher_id"
+
+    try:
+        with engine.connect() as connection:
+            rows = connection.execute(
+                text(f"""
+                    SELECT
+                        booking.id,
+                        booking.learner_id,
+                        booking.teacher_id,
+                        booking.skill_id,
+                        booking.availability_slot_id,
+                        booking.message,
+                        booking.status,
+                        booking.created_at,
+                        booking.updated_at,
+                        learner.full_name AS learner_name,
+                        teacher.full_name AS teacher_name,
+                        skill.name AS skill_name,
+                        slot.starts_at AS slot_starts_at,
+                        slot.ends_at AS slot_ends_at
+                    FROM booking_requests AS booking
+                    LEFT JOIN users AS learner ON learner.id = booking.learner_id
+                    LEFT JOIN users AS teacher ON teacher.id = booking.teacher_id
+                    LEFT JOIN skills AS skill ON skill.id = booking.skill_id
+                    LEFT JOIN availability_slots AS slot
+                        ON slot.id = booking.availability_slot_id
+                    WHERE booking.{owner_column} = :user_id
+                      AND (NOT :pending_only OR booking.status = 'PENDING')
+                      AND (
+                          CAST(:before_id AS bigint) IS NULL
+                          OR (booking.created_at, booking.id) < (
+                              SELECT boundary.created_at, boundary.id
+                              FROM booking_requests AS boundary
+                              WHERE boundary.id = :before_id
+                                AND boundary.{owner_column} = :user_id
+                          )
+                      )
+                    ORDER BY booking.created_at DESC, booking.id DESC
+                    LIMIT :limit
+                """),
+                {
+                    "user_id": user_id,
+                    "pending_only": pending_only,
+                    "before_id": before_id,
+                    "limit": limit,
+                },
+            ).mappings().all()
+
+            return [BookingListItem(**row) for row in rows]
+
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Database operation unavailable",
+        ) from None
+
+
+@router.get("/sent", response_model=list[BookingListItem])
 def list_sent_bookings(
     current_user: UserResponse = Depends(get_current_user),
 ):
-    try:
-        with engine.connect() as connection:
-            rows = connection.execute(
-                text("""
-                    SELECT
-                        id,
-                        learner_id,
-                        teacher_id,
-                        skill_id,
-                        availability_slot_id,
-                        message,
-                        status,
-                        created_at,
-                        updated_at
-                    FROM booking_requests
-                    WHERE learner_id = :learner_id
-                    ORDER BY created_at DESC, id DESC
-                """),
-                {"learner_id": current_user.id},
-            ).mappings().all()
+    return _list_bookings(current_user.id, "sent")
 
-            result = [
-                BookingResponse(**row)
-                for row in rows
-            ]
 
-    except SQLAlchemyError:
-        raise HTTPException(
-            status_code=503,
-            detail="Database operation unavailable",
-        ) from None
-
-    return result
-@router.get("/received", response_model=list[BookingResponse])
+@router.get("/received", response_model=list[BookingListItem])
 def list_received_bookings(
     current_user: UserResponse = Depends(get_current_user),
 ):
-    try:
-        with engine.connect() as connection:
-            rows = connection.execute(
-                text("""
-                    SELECT
-                        id,
-                        learner_id,
-                        teacher_id,
-                        skill_id,
-                        availability_slot_id,
-                        message,
-                        status,
-                        created_at,
-                        updated_at
-                    FROM booking_requests
-                    WHERE teacher_id = :teacher_id
-                    ORDER BY created_at DESC, id DESC
-                """),
-                {"teacher_id": current_user.id},
-            ).mappings().all()
+    return _list_bookings(current_user.id, "received")
 
-            result = [
-                BookingResponse(**row)
-                for row in rows
-            ]
 
-    except SQLAlchemyError:
-        raise HTTPException(
-            status_code=503,
-            detail="Database operation unavailable",
-        ) from None
+@router.get("/history", response_model=BookingHistoryPage)
+def list_booking_history(
+    direction: Literal["sent", "received"],
+    pending_only: bool = False,
+    before_id: int | None = Query(default=None, gt=0, le=9223372036854775807),
+    current_user: UserResponse = Depends(get_current_user),
+):
+    page_size = 10
+    rows = _list_bookings(
+        current_user.id,
+        direction,
+        pending_only=pending_only,
+        before_id=before_id,
+        limit=page_size + 1,
+    )
+    items = rows[:page_size]
 
-    return result
+    return BookingHistoryPage(
+        items=items,
+        next_cursor=items[-1].id if len(rows) > page_size else None,
+    )
+
+
 def _change_booking_status(
     booking_id: int,
     current_user: UserResponse,
@@ -357,9 +403,7 @@ def _change_booking_status(
                     "next_status": next_status,
                 },
             ).mappings().one()
-
             if next_status == "ACCEPTED":
-                # Tạo buổi học tương ứng với booking đã nhận.
                 connection.execute(
                     text("""
                         INSERT INTO sessions (booking_request_id)
@@ -368,22 +412,40 @@ def _change_booking_status(
                     {"booking_id": booking_id},
                 )
 
-                # Những yêu cầu đang chờ khác ở cùng khung giờ
-                # được từ chối vì lịch đã có người được nhận.
-                connection.execute(
+                rejected_requests = connection.execute(
                     text("""
                         UPDATE booking_requests
                         SET status = 'REJECTED'
                         WHERE availability_slot_id = :slot_id
                           AND id <> :booking_id
                           AND status = 'PENDING'
+                        RETURNING id, learner_id
                     """),
                     {
                         "slot_id": slot_id,
                         "booking_id": booking_id,
                     },
-                )
+                ).mappings().all()
 
+                for rejected_request in rejected_requests:
+                    create_booking_notification(
+                        connection,
+                        recipient_id=rejected_request["learner_id"],
+                        booking_id=rejected_request["id"],
+                        notification_type="BOOKING_REJECTED",
+                    )
+
+            if next_status in ("ACCEPTED", "REJECTED"):
+                create_booking_notification(
+                    connection,
+                    recipient_id=booking["learner_id"],
+                    booking_id=booking_id,
+                    notification_type=(
+                        "BOOKING_ACCEPTED"
+                        if next_status == "ACCEPTED"
+                        else "BOOKING_REJECTED"
+                    ),
+                )
             result = BookingResponse(**row)
 
     except IntegrityError:
@@ -435,3 +497,61 @@ def cancel_booking(
         current_user,
         "CANCELLED",
     )
+@router.get("/{booking_id}", response_model=BookingListItem)
+def get_booking(
+    booking_id: int = Path(gt=0, le=9223372036854775807),
+    current_user: UserResponse = Depends(get_current_user),
+):
+    try:
+        with engine.connect() as connection:
+            row = connection.execute(
+                text("""
+                    SELECT
+                        booking.id,
+                        booking.learner_id,
+                        booking.teacher_id,
+                        booking.skill_id,
+                        booking.availability_slot_id,
+                        booking.message,
+                        booking.status,
+                        booking.created_at,
+                        booking.updated_at,
+                        learner.full_name AS learner_name,
+                        teacher.full_name AS teacher_name,
+                        skill.name AS skill_name,
+                        slot.starts_at AS slot_starts_at,
+                        slot.ends_at AS slot_ends_at
+                    FROM booking_requests AS booking
+                    LEFT JOIN users AS learner
+                        ON learner.id = booking.learner_id
+                    LEFT JOIN users AS teacher
+                        ON teacher.id = booking.teacher_id
+                    LEFT JOIN skills AS skill
+                        ON skill.id = booking.skill_id
+                    LEFT JOIN availability_slots AS slot
+                        ON slot.id = booking.availability_slot_id
+                    WHERE booking.id = :booking_id
+                      AND (
+                          booking.learner_id = :user_id
+                          OR booking.teacher_id = :user_id
+                      )
+                """),
+                {
+                    "booking_id": booking_id,
+                    "user_id": current_user.id,
+                },
+            ).mappings().one_or_none()
+
+            if row is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Booking not found",
+                )
+
+            return BookingListItem(**row)
+
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Database operation unavailable",
+        ) from None

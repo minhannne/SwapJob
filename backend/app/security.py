@@ -19,7 +19,7 @@ if not JWT_SECRET_KEY or len(JWT_SECRET_KEY.encode("utf-8")) < 32:
     )
 
 JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 120
 
 password_hasher = PasswordHash.recommended()
 

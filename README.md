@@ -10,9 +10,9 @@ Public links will be added after deployment.
 
 | Resource | Status |
 | --- | --- |
-| Website | Not deployed yet |
-| API base URL | Not deployed yet |
-| API documentation | Not deployed yet |
+| Website | Already deployed |
+| API base URL | Already deployed |
+| API documentation | Already deployed |
 
 ## Features
 
